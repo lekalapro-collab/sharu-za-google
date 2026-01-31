@@ -1,0 +1,189 @@
+{
+  "name": "VED-Bot-GoogleSheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## VED-Bot Google Sheets Integration\n\n### Функции:\n- Логирование заявок\n- Чтение справочников\n- Экспорт описаний\n\n### Требуется:\n- Google OAuth2 credential\n- ID таблицы\n\n### Листы:\n- requests (заявки)\n- products (справочник)\n- exports (готовые описания)",
+        "height": 320,
+        "width": 300
+      },
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-100, 100],
+      "id": "note-gs-1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ved-sheets",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "id": "webhook-1",
+      "webhookId": "ved-sheets-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {"conditions": {"options": {"version": 2, "leftValue": "", "typeValidation": "strict", "caseSensitive": true}, "combinator": "and", "conditions": [{"id": "1", "leftValue": "={{ $json.action }}", "rightValue": "log_request", "operator": {"type": "string", "operation": "equals"}}]}, "renameOutput": true, "outputKey": "LogRequest"},
+            {"conditions": {"options": {"version": 2, "leftValue": "", "typeValidation": "strict", "caseSensitive": true}, "combinator": "and", "conditions": [{"id": "2", "leftValue": "={{ $json.action }}", "rightValue": "get_product", "operator": {"type": "string", "operation": "equals"}}]}, "renameOutput": true, "outputKey": "GetProduct"},
+            {"conditions": {"options": {"version": 2, "leftValue": "", "typeValidation": "strict", "caseSensitive": true}, "combinator": "and", "conditions": [{"id": "3", "leftValue": "={{ $json.action }}", "rightValue": "save_export", "operator": {"type": "string", "operation": "equals"}}]}, "renameOutput": true, "outputKey": "SaveExport"},
+            {"conditions": {"options": {"version": 2, "leftValue": "", "typeValidation": "strict", "caseSensitive": true}, "combinator": "and", "conditions": [{"id": "4", "leftValue": "={{ $json.action }}", "rightValue": "get_all", "operator": {"type": "string", "operation": "equals"}}]}, "renameOutput": true, "outputKey": "GetAll"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [480, 300],
+      "id": "router-1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "={{ $json.spreadsheet_id }}"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "requests"},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.toISO() }}",
+            "user_id": "={{ $json.user_id }}",
+            "username": "={{ $json.username }}",
+            "message": "={{ $json.message }}",
+            "response": "={{ $json.response }}",
+            "status": "={{ $json.status || 'completed' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {"id": "timestamp", "displayName": "timestamp", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "user_id", "displayName": "user_id", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "username", "displayName": "username", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "message", "displayName": "message", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "response", "displayName": "response", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "status", "displayName": "status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "LogRequest",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [720, 100],
+      "id": "log-request-1"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "id", "value": "={{ $json.spreadsheet_id }}"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "products"},
+        "filtersUI": {
+          "values": [
+            {"lookupColumn": "name", "lookupValue": "={{ $json.product_name }}"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "GetProduct",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [720, 280],
+      "id": "get-product-1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "={{ $json.spreadsheet_id }}"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "exports"},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.toISO() }}",
+            "user_id": "={{ $json.user_id }}",
+            "product_name": "={{ $json.product_name }}",
+            "description": "={{ $json.description }}",
+            "hs_code": "={{ $json.hs_code || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {"id": "timestamp", "displayName": "timestamp", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "user_id", "displayName": "user_id", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "product_name", "displayName": "product_name", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "description", "displayName": "description", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"},
+            {"id": "hs_code", "displayName": "hs_code", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "SaveExport",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [720, 460],
+      "id": "save-export-1"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "id", "value": "={{ $json.spreadsheet_id }}"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "={{ $json.sheet_name || 'products' }}"},
+        "options": {}
+      },
+      "name": "GetAll",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [720, 640],
+      "id": "get-all-1"
+    },
+    {
+      "parameters": {"respondWith": "json", "responseBody": "={{ JSON.stringify({success: true, data: $json}) }}"},
+      "name": "RespondLogRequest",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 100],
+      "id": "respond-log-1"
+    },
+    {
+      "parameters": {"respondWith": "json", "responseBody": "={{ JSON.stringify({success: true, data: $json}) }}"},
+      "name": "RespondGetProduct",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 280],
+      "id": "respond-get-1"
+    },
+    {
+      "parameters": {"respondWith": "json", "responseBody": "={{ JSON.stringify({success: true, data: $json}) }}"},
+      "name": "RespondSaveExport",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 460],
+      "id": "respond-save-1"
+    },
+    {
+      "parameters": {"respondWith": "json", "responseBody": "={{ JSON.stringify({success: true, data: $json}) }}"},
+      "name": "RespondGetAll",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 640],
+      "id": "respond-all-1"
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "Router", "type": "main", "index": 0}]]},
+    "Router": {"main": [
+      [{"node": "LogRequest", "type": "main", "index": 0}],
+      [{"node": "GetProduct", "type": "main", "index": 0}],
+      [{"node": "SaveExport", "type": "main", "index": 0}],
+      [{"node": "GetAll", "type": "main", "index": 0}]
+    ]},
+    "LogRequest": {"main": [[{"node": "RespondLogRequest", "type": "main", "index": 0}]]},
+    "GetProduct": {"main": [[{"node": "RespondGetProduct", "type": "main", "index": 0}]]},
+    "SaveExport": {"main": [[{"node": "RespondSaveExport", "type": "main", "index": 0}]]},
+    "GetAll": {"main": [[{"node": "RespondGetAll", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}
